@@ -20,7 +20,94 @@ Image(filename = 'Simple-Agent.jpeg')
 
 Author: [Kevin Thomas](mailto:ket189@pitt.edu)
 
+Source: [LlamaIndex](https://docs.llamaindex.ai/en/stable/understanding/agent)
+
 License: [Apache-2.0](https://github.com/mytechnotalent/Simple-Agent/blob/main/LICENSE)
+
+## Building a Basic Agent
+
+In LlamaIndex, an agent is a semi-autonomous piece of software powered by an LLM that is given a task and executes a series of steps towards solving that task. It is given a set of tools, which can be anything from arbitrary functions up to full LlamaIndex query engines, and it selects the best available tool to complete each step. When each step is completed, the agent judges whether the task is now complete, in which case it returns a result to the user, or whether it needs to take another step, in which case it loops back to the start.
+
+
+```python
+Image(filename = 'agent_flow.png')
+```
+
+
+
+
+    
+![png](README_files/README_5_0.png)
+    
+
+
+
+## Create Basic Tools
+
+For this simple example we'll be creating two tools: one that calculates the factorial of a number and the other to check if a number is prime.
+
+```python
+def factorial(n: int) -> int:
+    """Calculate the factorial of a number."""
+    if n == 0:
+        return 1
+    return n * factorial(n - 1)
+
+
+def is_prime(n: int) -> bool:
+    """Check if a number is prime."""
+    if n <= 1:
+        return False
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+```
+
+As you can see, these are regular vanilla Python functions. The docstring comments provide metadata to the agent about what the tool does: if your LLM is having trouble figuring out which tool to use, these docstrings are what you should tweak first.
+
+After each function is defined we create `FunctionTool` objects from these functions, which wrap them in a way that the agent can understand.
+
+```python
+factorial_tool = FunctionTool.from_defaults(fn=factorial)
+is_prime_tool = FunctionTool.from_defaults(fn=is_prime)
+```
+
+## Initialize the LLM
+
+We will use the `mixtral:8x7b` open-source model with Ollama.
+
+```python
+llm = Ollama(model="mixtral:8x7b", request_timeout=300.0)
+```
+
+## Initialize the Agent
+
+Now we create our agent. In this case, this is a `ReAct` agent, a relatively simple but powerful agent. We give it an array containing our two tools, the LLM we just created, and set `verbose=True` so we can see what's going on.
+
+```python
+agent = ReActAgent.from_tools(
+    [
+        factorial_tool, 
+        is_prime_tool
+    ], 
+    llm=llm, 
+    verbose=True, 
+    max_iterations=10  # increase from the default (usually 3-5)
+)
+```
+
+## Ask a Question
+
+We specify that it should use a tool, as this is pretty simple and `mixtral:8x7b` doesn't really need this tool to get the answer.
+
+```python
+response = agent.chat("What is the factorial of 5? Calculate step by step detailing all of your thought process.")
+```
+
+```python
+response = agent.chat("Is 29 a prime number? Calculate step by step detailing all of your thought process.")
+```
 
 ## Install Libraries
 
@@ -105,7 +192,7 @@ License: [Apache-2.0](https://github.com/mytechnotalent/Simple-Agent/blob/main/L
     Requirement already satisfied: MarkupSafe>=2.0 in /opt/anaconda3/envs/prod/lib/python3.12/site-packages (from jinja2->torch>=1.11.0->sentence-transformers>=2.6.1->llama-index-embeddings-huggingface) (2.1.3)
 
 
-## Install & Run Ollama
+Install & Run Ollama
 
 
 ```python
@@ -115,13 +202,13 @@ import subprocess
 
 
 def install_and_manage_ollama():
-    """Install and manage Ollama on various OS plaforms."""
+    """Install and manage Ollama on various OS platforms."""
 
     # detect system
     system = platform.system()
 
-    # detect, install and run Ollama on respective OS platform
     try:
+        # check if Ollama is installed
         if system == "Darwin":
             print("Detected macOS. Checking if Ollama is installed...")
             if subprocess.run(['which', 'ollama'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode != 0:
@@ -143,21 +230,15 @@ def install_and_manage_ollama():
         else:
             print("Unsupported operating system. Exiting.")
             return
+
+        # start a new Ollama process if Mac or Linux
         print("Managing Ollama process...")
         if system in ["Darwin", "Linux"]:
-            result = subprocess.run(['pgrep', '-f', 'ollama'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            if result.stdout:
-                pid = result.stdout.strip()
-                print(f"Found running Ollama process with PID: {pid}. Killing it...")
-                os.system(f"kill -9 {pid}")
-            else:
-                print("No Ollama process found running.")
             print("Starting ollama serve in the background...")
             subprocess.Popen(['ollama', 'serve'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, preexec_fn=os.setpgrp)
             print("ollama serve is now running in the background.")
         else:
             print("Automatic management of Ollama is not supported on Windows. Please run Ollama manually.")
-            return
     except Exception as e:
         print(f"An error occurred: {e}")
         return
@@ -170,13 +251,8 @@ install_and_manage_ollama()
     Detected macOS. Checking if Ollama is installed...
     Ollama is already installed.
     Managing Ollama process...
-    Found running Ollama process with PID: 84768
-    86693. Killing it...
     Starting ollama serve in the background...
     ollama serve is now running in the background.
-
-
-    sh: line 1: 86693: command not found
 
 
 ## Obtain `mixtral:8x7b` Model
@@ -227,7 +303,7 @@ run_ollama_mixtral()
     Command executed successfully.
 
 
-## Register Tools w/ `ReactAgent`
+## Instantiate LLM, Register Tools w/ `ReactAgent`, Instantiate `agent` Object
 
 
 ```python
@@ -238,6 +314,7 @@ from llama_index.core.tools import FunctionTool
 
 def factorial(n: int) -> int:
     """Calculate the factorial of a number."""
+
     if n == 0:
         return 1
     return n * factorial(n - 1)
@@ -245,6 +322,7 @@ def factorial(n: int) -> int:
 
 def is_prime(n: int) -> bool:
     """Check if a number is prime."""
+
     if n <= 1:
         return False
     for i in range(2, int(n**0.5) + 1):
@@ -257,8 +335,12 @@ factorial_tool = FunctionTool.from_defaults(fn=factorial)
 is_prime_tool = FunctionTool.from_defaults(fn=is_prime)
 
 llm = Ollama(model="mixtral:8x7b", request_timeout=300.0)
+
 agent = ReActAgent.from_tools(
-    [factorial_tool, is_prime_tool], 
+    [
+        factorial_tool, 
+        is_prime_tool
+    ], 
     llm=llm, 
     verbose=True, 
     max_iterations=10  # increase from the default (usually 3-5)
@@ -269,61 +351,82 @@ agent = ReActAgent.from_tools(
 
 
 ```python
-response = agent.chat("What is the factorial of 5? Calculate step by step detailing all of your thought process.")
+response = agent.chat("What is the factorial of 5? Calculate step by step detailing all of your thought process and make sure you use the tools provided.")
 print(response)
 ```
 
-    > Running step 4d8f9068-906a-4486-afcf-e00f122c5a84. Step input: What is the factorial of 5? Calculate step by step detailing all of your thought process.
-    [1;3;38;5;200mThought: The current language of the user is English. They want to know the factorial of 5 and also want to see a step-by-step calculation. I can use the 'factorial' tool to find the factorial of 5, but I also need to manually calculate it for demonstration purposes.
-    Action: No
-    Action Input: {'n': 5}
-    [0m[1;3;34mObservation: Error: No such tool named `No`.
-    [0m> Running step 73e48c92-2ed0-4d26-a27c-4506b658f9b4. Step input: None
-    [1;3;38;5;200mThought: The user received an error because there is no "No" tool. I should have written "No tool" instead. I will clarify this in my next message and then show the step-by-step calculation of the factorial of 5.
-    Answer: I'm sorry for the confusion. I made a mistake in my previous response by mentioning "No" as the action. To answer your question, let's manually calculate the factorial of 5 (denoted as 5!). The factorial of a number is calculated by multiplying it by all positive integers below it. So,
-    
-    1 × 2 × 3 × 4 × 5 = 120
-    
-    Therefore, the factorial of 5 is 120. I will now use the 'factorial' tool to confirm this result.
+    > Running step f8eb04c0-509d-4379-941f-73d7098d5e39. Step input: What is the factorial of 5? Calculate step by step detailing all of your thought process and make sure you use the tools provided.
+    [1;3;38;5;200mThought: The current language of the user is: English. I need to calculate the factorial of 5. I will use the 'factorial' tool for this task.
     Action: factorial
     Action Input: {'n': 5}
     [0m[1;3;34mObservation: 120
-    [0m> Running step 8f1d6e30-eada-4b8c-afb3-2e2693031f1b. Step input: None
-    [1;3;38;5;200mThought: The 'factorial' tool returned the correct value, 120, which confirms our manual calculation of the factorial of 5. To summarize, the factorial of 5 is indeed 120.
-    Answer: I can confirm that the factorial of 5 is 120. I used both a manual calculation and the 'factorial' tool to determine this result. Here's how we calculated it step-by-step:
-    
-    1 × 2 × 3 × 4 × 5 = 120
-    
-    This confirms that the factorial of 5 is 120. If you have any other questions, feel free to ask!
-    [0mI can confirm that the factorial of 5 is 120. I used both a manual calculation and the 'factorial' tool to determine this result. Here's how we calculated it step-by-step:
-    
-    1 × 2 × 3 × 4 × 5 = 120
-    
-    This confirms that the factorial of 5 is 120. If you have any other questions, feel free to ask!
+    [0m> Running step 3196981b-f82e-45a6-b322-291c57d27fed. Step input: None
+    [1;3;38;5;200mThought: I can answer without using any more tools. I'll use the user's language to answer.
+    Answer: The factorial of 5 is 120.
+    [0mThe factorial of 5 is 120.
 
 
 
 ```python
-response = agent.chat("Is 29 a prime number? Calculate step by step detailing all of your thought process.")
+response = agent.chat("Is 29 a prime number? Calculate step by step detailing all of your thought process and make sure you use the tools provided.")
 print(response)
 ```
 
-    > Running step 8295ef74-8fea-4936-ae7a-17eb52aecf5e. Step input: Is 29 a prime number? Calculate step by step detailing all of your thought process.
-    [1;3;38;5;200mThought: (Implicit) I can answer without any more tools!
-    Answer: To determine if a number is prime, we need to check if it has any divisors other than 1 and itself. Here's the step-by-step calculation for checking if 29 is a prime number:
-    
-    1. Start with the number 2 (the smallest possible prime factor).
-    2. Check if 2 is a divisor of 29 (i.e., 29 % 2 == 0). If it is, then 29 is not a prime number because it has a divisor other than 1 and itself. However, in this case, 29 % 2 != 0, which means that 2 is not a divisor of 29.
-    3. Move on to the next possible prime factor, which is 3. Check if 3 is a divisor of 29 (i.e., 29 % 3 == 0). Again, in this case, 29 % 3 != 0, so 3 is not a divisor of 29.
-    4. Continue checking for higher prime factors up to the square root of 29 (approximately 5.39). Since none of them are divisors of 29, we can conclude that 29 is indeed a prime number.
-    
-    So, 29 is a prime number. I arrived at this conclusion by manually performing the steps to check for any divisors other than 1 and itself.
-    [0mTo determine if a number is prime, we need to check if it has any divisors other than 1 and itself. Here's the step-by-step calculation for checking if 29 is a prime number:
-    
-    1. Start with the number 2 (the smallest possible prime factor).
-    2. Check if 2 is a divisor of 29 (i.e., 29 % 2 == 0). If it is, then 29 is not a prime number because it has a divisor other than 1 and itself. However, in this case, 29 % 2 != 0, which means that 2 is not a divisor of 29.
-    3. Move on to the next possible prime factor, which is 3. Check if 3 is a divisor of 29 (i.e., 29 % 3 == 0). Again, in this case, 29 % 3 != 0, so 3 is not a divisor of 29.
-    4. Continue checking for higher prime factors up to the square root of 29 (approximately 5.39). Since none of them are divisors of 29, we can conclude that 29 is indeed a prime number.
-    
-    So, 29 is a prime number. I arrived at this conclusion by manually performing the steps to check for any divisors other than 1 and itself.
+    > Running step 89761c13-da81-4b66-a936-c413849042db. Step input: Is 29 a prime number? Calculate step by step detailing all of your thought process and make sure you use the tools provided.
+    [1;3;38;5;200mThought: The current language of the user is English. I need to determine if the number 29 is a prime number using the 'is_prime' tool.
+    Action: is_prime
+    Action Input: {'n': 29}
+    [0m[1;3;34mObservation: True
+    [0m> Running step 4fde8c83-4a3e-42a2-8bc0-79b261aef4b3. Step input: None
+    [1;3;38;5;200mThought: I can answer without using any more tools. The observation from the 'is_prime' tool confirmed that the number 29 is a prime number, so there's no need to use any further tools or perform additional calculations.
+    Answer: Yes, 29 is a prime number.
+    [0mYes, 29 is a prime number.
+
+
+## Terminate Ollama Instances
+
+
+```python
+import os
+import platform
+import subprocess
+import time
+
+
+def kill_existing_ollama():
+    """Kill all existing Ollama processes on macOS or Linux."""
+
+    # detect system
+    system = platform.system()
+
+    # handle Windows OS
+    if system not in ["Darwin", "Linux"]:
+        print("This script is designed to run on macOS or Linux. Skipping process termination.")
+        return
+
+    # terminate all Ollama instances
+    result = subprocess.run(['pgrep', '-f', 'ollama'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if result.stdout:
+        pids = result.stdout.strip().splitlines()  # get all PIDs
+        print(f"Found running Ollama processes with PIDs: {', '.join(pids)}. Killing them...")
+        for pid in pids:
+            try:
+                os.kill(int(pid), 9)  # kill each PID individually
+                print(f"Killed process with PID: {pid}")
+            except Exception as e:
+                print(f"Failed to kill process with PID: {pid}. Error: {e}")
+        print("Waiting for processes to terminate...")
+        time.sleep(10)  # allow time for processes to shut down
+    else:
+        print("No Ollama process found running.")
+
+
+# run the function
+kill_existing_ollama()
+```
+
+    Found running Ollama processes with PIDs: 89335, 89342. Killing them...
+    Killed process with PID: 89335
+    Killed process with PID: 89342
+    Waiting for processes to terminate...
 
