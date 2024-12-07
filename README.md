@@ -356,14 +356,14 @@ print(response)
 ```
 
     > Running step f8eb04c0-509d-4379-941f-73d7098d5e39. Step input: What is the factorial of 5? Calculate step by step detailing all of your thought process and make sure you use the tools provided.
-    [1;3;38;5;200mThought: The current language of the user is: English. I need to calculate the factorial of 5. I will use the 'factorial' tool for this task.
+    Thought: The current language of the user is: English. I need to calculate the factorial of 5. I will use the 'factorial' tool for this task.
     Action: factorial
     Action Input: {'n': 5}
-    [0m[1;3;34mObservation: 120
-    [0m> Running step 3196981b-f82e-45a6-b322-291c57d27fed. Step input: None
-    [1;3;38;5;200mThought: I can answer without using any more tools. I'll use the user's language to answer.
+    Observation: 120
+    > Running step 3196981b-f82e-45a6-b322-291c57d27fed. Step input: None
+    Thought: I can answer without using any more tools. I'll use the user's language to answer.
     Answer: The factorial of 5 is 120.
-    [0mThe factorial of 5 is 120.
+    The factorial of 5 is 120.
 
 
 
@@ -373,14 +373,14 @@ print(response)
 ```
 
     > Running step 89761c13-da81-4b66-a936-c413849042db. Step input: Is 29 a prime number? Calculate step by step detailing all of your thought process and make sure you use the tools provided.
-    [1;3;38;5;200mThought: The current language of the user is English. I need to determine if the number 29 is a prime number using the 'is_prime' tool.
+    Thought: The current language of the user is English. I need to determine if the number 29 is a prime number using the 'is_prime' tool.
     Action: is_prime
     Action Input: {'n': 29}
-    [0m[1;3;34mObservation: True
-    [0m> Running step 4fde8c83-4a3e-42a2-8bc0-79b261aef4b3. Step input: None
-    [1;3;38;5;200mThought: I can answer without using any more tools. The observation from the 'is_prime' tool confirmed that the number 29 is a prime number, so there's no need to use any further tools or perform additional calculations.
+    Observation: True
+    > Running step 4fde8c83-4a3e-42a2-8bc0-79b261aef4b3. Step input: None
+    Thought: I can answer without using any more tools. The observation from the 'is_prime' tool confirmed that the number 29 is a prime number, so there's no need to use any further tools or perform additional calculations.
     Answer: Yes, 29 is a prime number.
-    [0mYes, 29 is a prime number.
+    Yes, 29 is a prime number.
 
 
 ## Terminate Ollama Instances
